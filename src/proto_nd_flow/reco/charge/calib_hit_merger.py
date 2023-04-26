@@ -32,12 +32,15 @@ class CalibHitMerger(H5FlowStage):
             index_only: True
         params:
           events_dset_name: 'charge/events'
-          hits_name: 'charge/hits'
-          hit_charge_name: 'charge/hits' # dataset to grab 'q' from
-          hits_idx_name: 'charge/hits_idx'
-          merged_name: 'charge/hits/merged'
+          hits_name: 'charge/calib_prompt_hits'
+          hit_charge_name: 'charge/calib_prompt_hits' # dataset to grab 'q' from
+          hits_idx_name: 'charge/calib_prompt_hits_idx'
+          packets_dset_name: 'charge/packets'
+          packets_idx_name: 'charge/packets_idx'
+          merged_name: 'charge/hits/calib_final_hits'
           merged_q_name: 'charge/hits/merged_q' # optional, for when a separate hit charge dataset is used for 'q'
           merge_cut: 30 # merge hits with delta t < merge_cut [CRS ticks]
+          max_merge_steps: 5 # maximum number of iterations to use when merging
           merge_mode: 'last-first'
     '''
     class_version = '0.0.0'
@@ -46,7 +49,9 @@ class CalibHitMerger(H5FlowStage):
         hits_name = 'charge/calib_prompt_hits',
         hit_charge_name = 'charge/calib_prompt_hits',
         hits_idx_name = 'charge/calib_prompt_hits_idx',
-        merged_name = 'charge/hits/calib_merged_hits',
+        packets_dset_name = 'charge/packets',
+        packets_idx_name = 'charge/packets_idx',
+        merged_name = 'charge/hits/calib_final_hits',
         merged_q_name = None,
         max_merge_steps = 5,
         merge_mode = 'last-first',
@@ -223,6 +228,9 @@ class CalibHitMerger(H5FlowStage):
     def run(self, source_name, source_slice, cache):
         super(CalibHitMerger, self).run(source_name, source_slice, cache)
 
+        # XXX presumably here cache['charge/packets'] only includes (unmasks)
+        # the packets corresponding to the events in the source_slice
+
         event_id = np.r_[source_slice]
         hits = cache[self.hits_name]
         hit_q = cache[self.hit_charge_name].reshape(hits.shape)
@@ -254,3 +262,9 @@ class CalibHitMerger(H5FlowStage):
         ev_ref = np.c_[(np.indices(merged_mask.shape)[0] + source_slice.start)[~merged_mask], merge_idx]
         self.data_manager.write_ref(source_name, self.merged_name, ev_ref)
         self.data_manager.write_ref(self.events_dset_name, self.merged_name, ev_ref)
+
+        # packets_ref = np.c_[(np.indices(merged_mask.shape)[0] + source_slice.start)[~merged_mask],
+        #                     xxx_packets]
+        packets_ref = np.c_[merge_idx, xxx_packets]
+        self.data_manager.write_ref(self.merged_name, self.packets_dset_name,
+                                    packets_ref)

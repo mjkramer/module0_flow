@@ -6,12 +6,17 @@ requires:
   - name: 'charge/calib_prompt_hits_idx'
     path: ['charge/calib_prompt_hits']
     index_only: True
+  - name: 'charge/packets_idx'
+    path: ['charge/packets']
+    index_only: True
+
 params:
   # inputs
   events_dset_name: 'charge/events'
   hits_name: 'charge/calib_prompt_hits'
   hit_charge_name: 'charge/calib_prompt_hits'
-  hits_idx_name: 'charge/calib_prompt_hits'
+  hits_idx_name: 'charge/calib_prompt_hits_idx'
+  packets_idx_name: 'charge/packets_idx'
 
   merged_name: 'charge/calib_final_hits'
   merge_cut: 65 # merge hits with delta t < merge_cut [CRS ticks]
