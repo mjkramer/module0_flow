@@ -138,13 +138,17 @@ class CalibHitBuilder(H5FlowStage):
         events_data = cache[self.events_dset_name]
         packets_data = cache[self.packets_dset_name]
         packets_index = cache[self.packets_index_name]
-        packet_frac_bt = cache['packet_frac_backtrack']
-        packet_seg_bt = cache['packet_seg_backtrack']
+        # packet_frac_bt = cache['packet_frac_backtrack']
+        # packet_seg_bt = cache['packet_seg_backtrack']
+        packet_frac_bt = None
+        packet_seg_bt = None
         t0_data = cache[self.t0_dset_name]
         raw_hits = cache[self.raw_hits_dset_name]
 
         mask = ~rfn.structured_to_unstructured(packets_data.mask).any(axis=-1)
         rh_mask = ~rfn.structured_to_unstructured(raw_hits.mask).any(axis=-1)
+
+        has_mc_truth = packet_seg_bt is not None
 
         # get event boundaries
         if np.count_nonzero(mask):
@@ -152,14 +156,13 @@ class CalibHitBuilder(H5FlowStage):
             mask = (packets_data['packet_type'] == 0) & mask
             n = np.count_nonzero(mask)
             packets_arr = packets_data.data[mask]
-            packet_frac_bt_arr = packet_frac_bt.data[mask]
-            packet_seg_bt_arr = packet_seg_bt.data[mask]
+            if has_mc_truth:
+                packet_frac_bt_arr = packet_frac_bt.data[mask]
+                packet_seg_bt_arr = packet_seg_bt.data[mask]
             index_arr = packets_index.data[mask]
         else:
             n = 0
             index_arr = np.zeros((0,), dtype=packets_index.dtype)
-
-        has_mc_truth = packet_seg_bt is not None
 
         # reserve new data
         calib_hits_slice = self.data_manager.reserve_data(self.calib_hits_dset_name, n)
